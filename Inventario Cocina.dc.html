@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<style>
+  html,body{margin:0;padding:0;background:oklch(0.90 0 0);}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  input,select,button,textarea{font-family:inherit;}
+  a{color:oklch(0.35 0 0);}
+  a:hover{color:oklch(0.20 0 0);}
+  input::placeholder{color:oklch(0.68 0 0);}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;justify-content:center;align-items:flex-start;background:oklch(0.90 0 0);font-family:'IBM Plex Sans',system-ui,sans-serif;color:oklch(0.24 0 0);">
+<div style="width:100%;max-width:430px;min-height:100vh;background:oklch(0.975 0 0);position:relative;display:flex;flex-direction:column;box-shadow:0 0 60px oklch(0.5 0 0 / 0.18);">
+
+  <sc-if value="{{ headerVisible }}" hint-placeholder-val="{{ true }}">
+  <div style="position:sticky;top:0;z-index:20;background:oklch(0.975 0 0);border-bottom:1px solid oklch(0.89 0 0);">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px 10px;">
+      <img src="./logo-thaithai.webp" alt="Thai Thai" style="width:44px;height:44px;flex:0 0 auto;border-radius:50%;object-fit:cover;display:block;" />
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:oklch(0.55 0 0);font-weight:600;">Thai Thai · Inventario semanal</div>
+        <div style="font-size:19px;font-weight:700;letter-spacing:-0.01em;line-height:1.15;">{{ fechaTitulo }}</div>
+        <div style="font-size:12px;color:oklch(0.52 0 0);line-height:1.2;">{{ saludo }}</div>
+      </div>
+      <button onClick="{{ irConfig }}" style="width:44px;height:44px;border-radius:12px;border:1px solid oklch(0.86 0 0);background:oklch(0.99 0 0);font-size:18px;cursor:pointer;color:oklch(0.4 0 0);" style-hover="background:oklch(0.94 0 0)">⚙</button>
+    </div>
+
+    <sc-if value="{{ enCaptura }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:0 18px 12px;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="flex:1;height:8px;border-radius:99px;background:oklch(0.90 0 0);overflow:hidden;">
+            <div style="height:100%;border-radius:99px;background:oklch(0.32 0 0);transition:width .25s ease;width:{{ progresoPct }};"></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:oklch(0.45 0 0);white-space:nowrap;">{{ progresoTexto }}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input value="{{ busqueda }}" onChange="{{ setBusqueda }}" placeholder="Buscar artículo…" style="flex:1;height:44px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);padding:0 14px;font-size:15px;outline:none;color:inherit;" />
+          <button onClick="{{ toggleFaltantes }}" style="height:44px;padding:0 14px;border-radius:12px;border:1px solid {{ filtroBorde }};background:{{ filtroFondo }};color:{{ filtroTexto }};font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Pendientes</button>
+        </div>
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin:0 -18px;padding-left:18px;padding-right:18px;">
+          <sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
+            <button onClick="{{ c.ir }}" style="flex:0 0 auto;height:36px;padding:0 13px;border-radius:99px;border:1px solid {{ c.borde }};background:{{ c.fondo }};color:{{ c.color }};font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:0.01em;">{{ c.etiqueta }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ avisoVisible }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:10px 12px 0;padding:11px 13px;border-radius:12px;background:{{ avisoFondo }};border:1px solid {{ avisoBorde }};font-size:12.5px;line-height:1.45;color:{{ avisoColor }};">{{ avisoTexto }}</div>
+  </sc-if>
+
+  <sc-if value="{{ enCaptura }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;padding:6px 0 132px;">
+      <sc-if value="{{ reinicioVisible }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:10px 12px 4px;padding:14px;border-radius:14px;background:oklch(0.95 0.03 150);border:1px solid oklch(0.80 0.06 150);display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:13.5px;font-weight:600;line-height:1.45;color:oklch(0.32 0.07 150);">{{ reinicioTexto }}</div>
+          <button onClick="{{ pedirSemana }}" style="height:46px;border-radius:12px;border:none;background:oklch(0.45 0.10 150);color:oklch(0.99 0.01 150);font-size:14px;font-weight:700;cursor:pointer;">Empezar nuevo inventario</button>
+        </div>
+      </sc-if>
+      <div style="opacity:{{ listaOpacidad }};transition:opacity .2s;">
+      <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="3">
+        <div id="{{ g.ancla }}" style="scroll-margin-top:190px;">
+          <button onClick="{{ g.abrir }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px 12px;margin-top:6px;background:transparent;border:none;border-top:1px solid oklch(0.90 0 0);cursor:pointer;text-align:left;">
+            <div style="display:flex;align-items:center;gap:9px;">
+              <span style="font-size:11px;color:oklch(0.45 0 0);">{{ g.flecha }}</span>
+              <span style="font-size:13px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:oklch(0.20 0 0);">{{ g.nombre }}</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:oklch(0.48 0 0);">{{ g.contador }}</span>
+          </button>
+          <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="4">
+            <div style="margin:0 12px 8px;padding:13px 14px 14px;border-radius:16px;background:{{ it.fondo }};border:1px solid {{ it.borde }};display:flex;flex-direction:column;gap:11px;">
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                  <div style="font-size:15px;font-weight:600;line-height:1.25;text-wrap:pretty;">{{ it.nombre }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;padding:3px 7px;border-radius:6px;background:oklch(0.92 0 0);color:oklch(0.42 0 0);">mín {{ it.min }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:oklch(0.44 0 0);">{{ it.prev }}</span>
+                  </div>
+                </div>
+                <div style="font-size:16px;color:{{ it.checkColor }};line-height:1;padding-top:3px;">{{ it.check }}</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <label style="display:flex;flex-direction:column;gap:5px;">
+                  <span style="font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:oklch(0.55 0 0);">Tengo</span>
+                  <input value="{{ it.existencia }}" onChange="{{ it.setExistencia }}" onFocus="{{ it.enfocar }}" onBlur="{{ it.desenfocar }}" inputMode="decimal" placeholder="0" style="height:48px;border-radius:12px;border:1px solid oklch(0.86 0 0);background:oklch(0.995 0 0);padding:0 12px;font-size:17px;font-family:'IBM Plex Mono',monospace;font-weight:600;outline:none;width:100%;color:inherit;" />
+                </label>
+                <label style="display:flex;flex-direction:column;gap:5px;">
+                  <span style="font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:oklch(0.48 0 0);">Pedir</span>
+                  <input value="{{ it.pedido }}" onChange="{{ it.setPedido }}" onFocus="{{ it.enfocar }}" onBlur="{{ it.desenfocar }}" inputMode="decimal" placeholder="0" style="height:48px;border-radius:12px;border:1px solid {{ it.pedirBorde }};background:{{ it.pedirFondo }};padding:0 12px;font-size:17px;font-family:'IBM Plex Mono',monospace;font-weight:700;outline:none;width:100%;color:inherit;" />
+                </label>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <select value="{{ it.unidad }}" onChange="{{ it.setUnidad }}" style="height:40px;border-radius:10px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);padding:0 8px;font-size:13px;font-weight:600;color:oklch(0.35 0 0);cursor:pointer;">
+                  <option value="pz">pz</option>
+                  <option value="kg">kg</option>
+                  <option value="gr">gr</option>
+                  <option value="lt">lt</option>
+                  <option value="ml">ml</option>
+                  <option value="caja">caja</option>
+                  <option value="paq">paq</option>
+                  <option value="ord">ord</option>
+                  <option value="mtr">mtr</option>
+                </select>
+                <button onClick="{{ it.sinFalta }}" style="flex:1;height:40px;border-radius:10px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);font-size:13px;font-weight:600;color:oklch(0.42 0 0);cursor:pointer;">No hace falta</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+      </div>
+      <div style="padding:26px 18px 10px;text-align:center;font-size:12.5px;color:oklch(0.6 0 0);">{{ pieCaptura }}</div>
+    </div>
+
+    <div style="position:sticky;bottom:0;z-index:20;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:oklch(0.975 0 0 / 0.94);backdrop-filter:blur(10px);border-top:1px solid oklch(0.89 0 0);display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:oklch(0.5 0 0);font-family:'IBM Plex Mono',monospace;">
+        <span>{{ resumenBarra }}</span>
+        <span>{{ guardadoTexto }}</span>
+      </div>
+      <button onClick="{{ irRevision }}" style="height:54px;border-radius:14px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:16px;font-weight:700;letter-spacing:0.01em;cursor:pointer;" style-hover="background:oklch(0.40 0 0)">Revisar y enviar</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ enRevision }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;padding:8px 0 128px;">
+      <div style="padding:8px 18px 4px;font-size:14px;color:oklch(0.45 0 0);line-height:1.5;text-wrap:pretty;">{{ revisionIntro }}</div>
+      <sc-for list="{{ pedidoGrupos }}" as="g" hint-placeholder-count="2">
+        <div style="margin:16px 12px 0;border:1px solid oklch(0.88 0 0);border-radius:16px;overflow:hidden;background:oklch(0.995 0 0);">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:oklch(0.94 0 0);">
+            <span style="font-size:12.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:oklch(0.28 0 0);">{{ g.nombre }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:oklch(0.5 0 0);">{{ g.contador }}</span>
+          </div>
+          <sc-for list="{{ g.lineas }}" as="l" hint-placeholder-count="3">
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:11px 14px;border-top:1px solid oklch(0.93 0 0);align-items:baseline;">
+              <div style="flex:1;font-size:14px;line-height:1.3;">{{ l.nombre }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:oklch(0.55 0 0);white-space:nowrap;">{{ l.tengo }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:oklch(0.20 0 0);white-space:nowrap;min-width:62px;text-align:right;">{{ l.pedir }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+      <div style="margin:18px 12px 0;padding:14px;border-radius:16px;background:oklch(0.94 0 0);display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;color:oklch(0.5 0 0);">El correo se enviará a</div>
+        <sc-for list="{{ correos }}" as="c" hint-placeholder-count="3">
+          <div style="font-size:13.5px;font-family:'IBM Plex Mono',monospace;color:oklch(0.30 0 0);word-break:break-all;">{{ c.valor }}</div>
+        </sc-for>
+        <div style="font-size:12.5px;color:oklch(0.45 0 0);line-height:1.5;">Con la tabla completa (existencia + cantidad a pedir) agrupada por proveedor, la fecha y hora del envío, y quién capturó. Va como PDF adjunto.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onClick="{{ irConfig }}" style="height:38px;padding:0 14px;border-radius:10px;border:1px solid oklch(0.84 0 0);background:oklch(0.99 0 0);font-size:13px;font-weight:600;cursor:pointer;color:oklch(0.35 0 0);">Cambiar destinatarios</button>
+          <button onClick="{{ descargarPdf }}" style="height:38px;padding:0 14px;border-radius:10px;border:1px solid oklch(0.84 0 0);background:oklch(0.99 0 0);font-size:13px;font-weight:600;cursor:pointer;color:oklch(0.35 0 0);">Ver el PDF</button>
+        </div>
+      </div>
+    </div>
+    <div style="position:sticky;bottom:0;z-index:20;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:oklch(0.975 0 0 / 0.94);backdrop-filter:blur(10px);border-top:1px solid oklch(0.89 0 0);display:flex;gap:10px;">
+      <button onClick="{{ volverCaptura }}" style="width:110px;height:54px;border-radius:14px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.35 0 0);">Volver</button>
+      <button onClick="{{ enviar }}" style="flex:1;height:54px;border-radius:14px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:16px;font-weight:700;cursor:pointer;" style-hover="background:oklch(0.40 0 0)">{{ textoEnviar }}</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ enEnviado }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:60px 26px;text-align:center;">
+      <div style="width:76px;height:76px;border-radius:50%;background:oklch(0.24 0 0);display:flex;align-items:center;justify-content:center;font-size:34px;color:oklch(0.99 0 0);">✓</div>
+      <div style="font-size:23px;font-weight:700;letter-spacing:-0.01em;">Inventario enviado</div>
+      <div style="font-size:14.5px;color:oklch(0.45 0 0);line-height:1.6;text-wrap:pretty;">{{ enviadoDetalle }}</div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 18px;border-radius:14px;background:oklch(0.94 0 0);font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:oklch(0.30 0 0);word-break:break-all;">
+        <sc-for list="{{ correos }}" as="c" hint-placeholder-count="3">
+          <div>{{ c.valor }}</div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px;">
+        <button onClick="{{ seguirCapturando }}" style="height:54px;border-radius:14px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:15.5px;font-weight:700;cursor:pointer;">Seguir capturando</button>
+        <button onClick="{{ descargarPdf }}" style="height:50px;border-radius:14px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.3 0 0);">Ver el PDF</button>
+        <button onClick="{{ pedirNuevo }}" style="height:50px;border-radius:14px;border:1px solid oklch(0.85 0 0);background:transparent;font-size:14px;font-weight:600;cursor:pointer;color:oklch(0.45 0 0);">Empezar uno nuevo</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ enLogin }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;padding:26px 18px;display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:18px;font-weight:700;">Entrar</div>
+      <div style="font-size:13.5px;color:oklch(0.45 0 0);line-height:1.5;">Con el correo y contraseña que se dio de alta para ti.</div>
+      <input value="{{ loginCorreo }}" onChange="{{ setLoginCorreo }}" type="email" placeholder="correo" style="height:52px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:15px;outline:none;color:inherit;" />
+      <input value="{{ loginPass }}" onChange="{{ setLoginPass }}" type="password" placeholder="contraseña" style="height:52px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:15px;outline:none;color:inherit;" />
+      <button onClick="{{ hacerLogin }}" style="height:54px;border-radius:14px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:16px;font-weight:700;cursor:pointer;">Entrar</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ enConexion }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;padding:26px 18px;display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:18px;font-weight:700;">Conexión con Supabase</div>
+      <div style="font-size:13.5px;color:oklch(0.45 0 0);line-height:1.55;">Cópialos de Supabase → Project Settings → API. Se guardan solo en este teléfono.</div>
+      <input value="{{ sbUrl }}" onChange="{{ setSbUrl }}" placeholder="https://xxxx.supabase.co" style="height:52px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:14px;outline:none;color:inherit;" />
+      <input value="{{ sbKey }}" onChange="{{ setSbKey }}" placeholder="anon public key" style="height:52px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:14px;outline:none;color:inherit;" />
+      <button onClick="{{ guardarConexion }}" style="height:54px;border-radius:14px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:16px;font-weight:700;cursor:pointer;">Conectar</button>
+      <button onClick="{{ usarLocal }}" style="height:46px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;color:oklch(0.4 0 0);">Seguir sin conexión (solo este teléfono)</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ enConfig }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;padding:0 0 30px;display:flex;flex-direction:column;gap:22px;">
+      <div style="position:sticky;top:0;z-index:30;background:oklch(0.975 0 0);border-bottom:1px solid oklch(0.89 0 0);padding:12px 14px;display:flex;align-items:center;gap:10px;">
+        <button onClick="{{ volverCaptura }}" style="height:44px;padding:0 14px 0 11px;border-radius:12px;border:1px solid oklch(0.86 0 0);background:oklch(0.99 0 0);font-size:14px;font-weight:600;cursor:pointer;color:oklch(0.25 0 0);white-space:nowrap;">← Volver</button>
+        <div style="font-size:15px;font-weight:700;">Ajustes</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:0 18px;">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;color:oklch(0.5 0 0);">Destinatarios del correo</div>
+        <sc-for list="{{ correos }}" as="c" hint-placeholder-count="3">
+          <input value="{{ c.valor }}" onChange="{{ c.set }}" placeholder="correo@thaithaimerida.com.mx" style="height:50px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:14px;outline:none;color:inherit;" />
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:0 18px;">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;color:oklch(0.5 0 0);">{{ tituloCapturando }}</div>
+        <sc-if value="{{ chefVisible }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px;border-radius:12px;background:oklch(0.94 0 0);display:flex;flex-direction:column;gap:3px;">
+            <div style="font-size:17px;font-weight:700;">{{ chefNombre }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:oklch(0.45 0 0);word-break:break-all;">{{ chefCorreo }}</div>
+          </div>
+        </sc-if>
+        <div style="font-size:12.5px;color:oklch(0.5 0 0);line-height:1.5;">{{ textoSync }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:0 18px;">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;color:oklch(0.5 0 0);">Logo del restaurante</div>
+        <image-slot id="logo-thaithai" style="width:100%;height:150px;" shape="rounded" radius="14" fit="contain" placeholder="Arrastra aquí el logo"></image-slot>
+      </div>
+      <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ irAdmin }}" style="margin:0 18px;height:50px;border-radius:12px;border:1px solid oklch(0.30 0 0);background:oklch(0.99 0 0);font-size:14.5px;font-weight:700;cursor:pointer;color:oklch(0.20 0 0);">Administrar artículos</button>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;gap:8px;margin:0 18px;padding-top:14px;border-top:1px solid oklch(0.90 0 0);">
+        <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ pedirConexion }}" style="width:100%;height:46px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;color:oklch(0.4 0 0);">Conexión con Supabase</button>
+        </sc-if>
+        <button onClick="{{ cerrarSesion }}" style="height:46px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;color:oklch(0.4 0 0);">Cerrar sesión</button>
+        <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ pedirBorrar }}" style="width:100%;height:46px;border-radius:12px;border:1px solid oklch(0.82 0.04 28);background:transparent;color:oklch(0.50 0.15 28);font-size:13.5px;font-weight:600;cursor:pointer;">Borrar el inventario en curso</button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ enAdmin }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;padding:0 0 96px;display:flex;flex-direction:column;gap:12px;">
+      <div style="position:sticky;top:0;z-index:30;background:oklch(0.975 0 0);border-bottom:1px solid oklch(0.89 0 0);padding:12px 14px 12px;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onClick="{{ volverCaptura }}" style="height:44px;padding:0 14px 0 11px;border-radius:12px;border:1px solid oklch(0.86 0 0);background:oklch(0.99 0 0);font-size:14px;font-weight:600;cursor:pointer;color:oklch(0.25 0 0);white-space:nowrap;">← Volver</button>
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="font-size:15px;font-weight:700;line-height:1.15;">Administrar artículos</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:oklch(0.5 0 0);">{{ adminResumen }}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onClick="{{ verArticulos }}" style="{{ estiloTabArt }}">Artículos</button>
+          <button onClick="{{ verUsuarios }}" style="{{ estiloTabUsr }}">Usuarios</button>
+        </div>
+        <sc-if value="{{ tabArticulos }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px;">
+            <input value="{{ adminBusqueda }}" onChange="{{ setAdminBusqueda }}" placeholder="Buscar artículo…" style="flex:1;height:44px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:15px;outline:none;color:inherit;" />
+            <button onClick="{{ toggleMostrarBaja }}" style="height:44px;padding:0 12px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);font-size:12.5px;font-weight:600;cursor:pointer;color:oklch(0.35 0 0);white-space:nowrap;">{{ textoMostrarBaja }}</button>
+          </div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ adminMsgVisible }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:0 14px;padding:10px 12px;border-radius:10px;background:oklch(0.94 0 0);font-size:12.5px;color:oklch(0.35 0 0);line-height:1.4;">{{ adminMsg }}</div>
+      </sc-if>
+
+      <sc-if value="{{ tabUsuarios }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:10px;padding:0 0 6px;">
+          <sc-if value="{{ usrFormVisible }}" hint-placeholder-val="{{ false }}">
+            <div style="margin:0 12px;padding:16px 14px;border-radius:16px;border:1px solid oklch(0.30 0 0);background:oklch(0.995 0 0);display:flex;flex-direction:column;gap:10px;">
+              <div style="font-size:15px;font-weight:700;">Usuario</div>
+              <input value="{{ usrCorreo }}" onChange="{{ setUsrCorreo }}" type="email" placeholder="correo@dominio.com" style="height:50px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:15px;outline:none;color:inherit;" />
+              <input value="{{ usrNombre }}" onChange="{{ setUsrNombre }}" placeholder="Nombre (como aparece en el saludo)" style="height:50px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:15px;outline:none;color:inherit;" />
+              <div style="display:flex;gap:8px;">
+                <button onClick="{{ setGenM }}" style="{{ estiloGenM }}">Bienvenido</button>
+                <button onClick="{{ setGenF }}" style="{{ estiloGenF }}">Bienvenida</button>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button onClick="{{ cancelarUsr }}" style="width:110px;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:14.5px;font-weight:600;cursor:pointer;color:oklch(0.35 0 0);">Cancelar</button>
+                <button onClick="{{ guardarUsr }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:15px;font-weight:700;cursor:pointer;">Guardar</button>
+              </div>
+            </div>
+          </sc-if>
+          <div style="padding:8px 18px 0;font-size:12.5px;color:oklch(0.5 0 0);line-height:1.45;">El nombre y el saludo del encabezado, del PDF y del historial salen de esta lista. Dar de alta aquí no crea la contraseña: eso se hace en Supabase → Authentication → Users.</div>
+          <sc-for list="{{ usuariosLista }}" as="u" hint-placeholder-count="3">
+            <div style="margin:0 12px;padding:12px 14px;border-radius:14px;border:1px solid oklch(0.90 0 0);background:oklch(0.995 0 0);display:flex;flex-direction:column;gap:9px;">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <div style="font-size:14.5px;font-weight:600;">{{ u.saludo }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:oklch(0.48 0 0);word-break:break-all;">{{ u.correo }}</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button onClick="{{ u.editar }}" style="flex:1;height:42px;border-radius:10px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);font-size:13px;font-weight:600;cursor:pointer;color:oklch(0.30 0 0);">Editar</button>
+                <button onClick="{{ u.quitar }}" style="flex:1;height:42px;border-radius:10px;border:1px solid oklch(0.85 0.03 28);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:oklch(0.48 0.14 28);">Quitar</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ formVisible }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:0 12px;padding:16px 14px;border-radius:16px;border:1px solid oklch(0.30 0 0);background:oklch(0.995 0 0);display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:15px;font-weight:700;">{{ formTitulo }}</div>
+          <input value="{{ formNombre }}" onChange="{{ setFormNombre }}" placeholder="Nombre del artículo" style="height:50px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:15px;outline:none;color:inherit;" />
+          <select value="{{ formProveedor }}" onChange="{{ setFormProveedor }}" style="height:50px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 12px;font-size:15px;color:inherit;cursor:pointer;">
+            <sc-for list="{{ adminProveedores }}" as="p" hint-placeholder-count="8">
+              <option value="{{ p.valor }}">{{ p.valor }}</option>
+            </sc-for>
+          </select>
+          <div style="display:grid;grid-template-columns:1fr 110px;gap:8px;">
+            <input value="{{ formMinimo }}" onChange="{{ setFormMinimo }}" placeholder="Inventario mínimo (ej. 5 Kgs)" style="height:50px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 14px;font-size:15px;outline:none;color:inherit;" />
+            <select value="{{ formUnidad }}" onChange="{{ setFormUnidad }}" style="height:50px;border-radius:12px;border:1px solid oklch(0.87 0 0);background:oklch(0.995 0 0);padding:0 10px;font-size:15px;color:inherit;cursor:pointer;">
+              <option value="">auto</option>
+              <option value="pz">pz</option>
+              <option value="kg">kg</option>
+              <option value="gr">gr</option>
+              <option value="lt">lt</option>
+              <option value="ml">ml</option>
+              <option value="caja">caja</option>
+              <option value="paq">paq</option>
+              <option value="ord">ord</option>
+              <option value="mtr">mtr</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onClick="{{ cancelarForm }}" style="width:110px;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:14.5px;font-weight:600;cursor:pointer;color:oklch(0.35 0 0);">Cancelar</button>
+            <button onClick="{{ guardarForm }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:15px;font-weight:700;cursor:pointer;">Guardar</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-for list="{{ adminGruposVisibles }}" as="g" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button onClick="{{ g.abrir }}" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 18px 11px;border:none;border-top:1px solid oklch(0.90 0 0);background:transparent;cursor:pointer;text-align:left;">
+            <span style="display:flex;align-items:center;gap:9px;">
+              <span style="font-size:11px;color:oklch(0.45 0 0);">{{ g.flecha }}</span>
+              <span style="font-size:12.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:oklch(0.20 0 0);">{{ g.nombre }}</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:oklch(0.5 0 0);">{{ g.contador }}</span>
+          </button>
+          <sc-for list="{{ g.items }}" as="a" hint-placeholder-count="4">
+            <div style="margin:0 12px;padding:12px 14px;border-radius:14px;border:1px solid oklch(0.90 0 0);background:oklch(0.995 0 0);display:flex;flex-direction:column;gap:9px;">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <div style="font-size:14.5px;font-weight:600;line-height:1.25;">{{ a.nombre }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:oklch(0.48 0 0);">{{ a.detalle }}</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button onClick="{{ a.editar }}" style="flex:1;height:42px;border-radius:10px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);font-size:13px;font-weight:600;cursor:pointer;color:oklch(0.30 0 0);">Editar</button>
+                <button onClick="{{ a.accion }}" style="flex:1;height:42px;border-radius:10px;border:1px solid oklch(0.85 0.03 28);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:oklch(0.48 0.14 28);">{{ a.accionTexto }}</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+
+    </div>
+    <div style="position:sticky;bottom:0;z-index:30;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:oklch(0.975 0 0 / 0.94);backdrop-filter:blur(10px);border-top:1px solid oklch(0.89 0 0);">
+      <button onClick="{{ agregarEnTab }}" style="width:100%;height:52px;border-radius:14px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:15.5px;font-weight:700;cursor:pointer;">{{ textoAgregar }}</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirmEnvioVisible }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:oklch(0.20 0 0 / 0.55);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div style="width:100%;max-width:340px;background:oklch(0.99 0 0);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px oklch(0.2 0 0 / 0.35);">
+        <sc-if value="{{ avisoEnvioVisible }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:11px 12px;border-radius:12px;background:oklch(0.96 0.03 28);border:1px solid oklch(0.84 0.06 28);font-size:13px;line-height:1.4;color:oklch(0.40 0.13 28);font-weight:600;">{{ avisoEnvioTexto }}</div>
+        </sc-if>
+        <div style="font-size:17px;font-weight:700;">¿Enviar el inventario?</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <sc-for list="{{ lineasEnvio }}" as="l" hint-placeholder-count="4">
+            <div style="display:flex;gap:8px;font-size:13.5px;color:oklch(0.35 0 0);line-height:1.35;">
+              <span style="color:oklch(0.55 0 0);">•</span>
+              <span>{{ l.texto }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onClick="{{ cancelarEnvio }}" style="flex:1;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.3 0 0);">Cancelar</button>
+          <button onClick="{{ confirmarEnvio }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:15px;font-weight:700;cursor:pointer;">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirmSemanaVisible }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:oklch(0.20 0 0 / 0.55);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div style="width:100%;max-width:340px;background:oklch(0.99 0 0);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px oklch(0.2 0 0 / 0.35);">
+        <div style="font-size:17px;font-weight:700;">¿Empezar el inventario de esta semana?</div>
+        <div style="font-size:13.5px;color:oklch(0.45 0 0);line-height:1.55;">Se limpian las capturas de la semana pasada para empezar en ceros. No se pierde nada: el inventario anterior ya se envió por correo y quedó guardado en el historial. Lo verás como referencia en "sem. pasada".</div>
+        <div style="display:flex;gap:10px;padding-top:4px;">
+          <button onClick="{{ cancelarSemana }}" style="flex:1;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.3 0 0);">Cancelar</button>
+          <button onClick="{{ confirmarSemana }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.45 0.10 150);color:oklch(0.99 0.01 150);font-size:15px;font-weight:700;cursor:pointer;">Empezar</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirmNuevoVisible }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:oklch(0.20 0 0 / 0.55);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div style="width:100%;max-width:340px;background:oklch(0.99 0 0);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px oklch(0.2 0 0 / 0.35);">
+        <div style="font-size:17px;font-weight:700;">¿Empezar un inventario nuevo?</div>
+        <div style="font-size:13.5px;color:oklch(0.45 0 0);line-height:1.5;">Esto borra las capturas de esta semana. Si solo quieres completar y reenviar, usa Seguir capturando.</div>
+        <div style="display:flex;gap:10px;padding-top:4px;">
+          <button onClick="{{ cancelarNuevo }}" style="flex:1;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.3 0 0);">Cancelar</button>
+          <button onClick="{{ nuevoInventario }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.48 0.16 28);color:oklch(0.99 0 0);font-size:15px;font-weight:700;cursor:pointer;">Empezar nuevo</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ usrBajaVisible }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:oklch(0.20 0 0 / 0.55);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div style="width:100%;max-width:340px;background:oklch(0.99 0 0);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px oklch(0.2 0 0 / 0.35);">
+        <div style="font-size:17px;font-weight:700;">¿Quitar este usuario de la lista?</div>
+        <div style="font-size:13.5px;color:oklch(0.45 0 0);line-height:1.5;">{{ usrBajaNombre }} dejará de tener nombre y saludo en la app. Su acceso se quita aparte, en Supabase → Authentication → Users.</div>
+        <div style="display:flex;gap:10px;padding-top:4px;">
+          <button onClick="{{ cancelarUsrBaja }}" style="flex:1;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.3 0 0);">Cancelar</button>
+          <button onClick="{{ confirmarUsrBaja }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.48 0.16 28);color:oklch(0.99 0 0);font-size:15px;font-weight:700;cursor:pointer;">Quitar</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirmConexion }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:oklch(0.20 0 0 / 0.55);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div style="width:100%;max-width:340px;background:oklch(0.99 0 0);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px oklch(0.2 0 0 / 0.35);">
+        <div style="font-size:17px;font-weight:700;">¿Abrir la conexión con Supabase?</div>
+        <div style="font-size:13.5px;color:oklch(0.45 0 0);line-height:1.5;">Ahí se cambia la base de datos a la que se conecta la app. Si se modifica mal, nadie podrá capturar ni enviar.</div>
+        <div style="display:flex;gap:10px;padding-top:4px;">
+          <button onClick="{{ cancelarConexion }}" style="flex:1;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.3 0 0);">Cancelar</button>
+          <button onClick="{{ irConexion }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.24 0 0);color:oklch(0.99 0 0);font-size:15px;font-weight:700;cursor:pointer;">Continuar</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ bajaVisible }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:oklch(0.20 0 0 / 0.55);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div style="width:100%;max-width:340px;background:oklch(0.99 0 0);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px oklch(0.2 0 0 / 0.35);">
+        <div style="font-size:17px;font-weight:700;">¿Dar de baja este artículo?</div>
+        <div style="font-size:13.5px;color:oklch(0.45 0 0);line-height:1.5;">{{ bajaNombre }} deja de aparecer en la captura, pero se conserva con todo su historial y lo puedes reactivar cuando quieras.</div>
+        <div style="display:flex;gap:10px;padding-top:4px;">
+          <button onClick="{{ cancelarBaja }}" style="flex:1;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.3 0 0);">Cancelar</button>
+          <button onClick="{{ confirmarBaja }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.48 0.16 28);color:oklch(0.99 0 0);font-size:15px;font-weight:700;cursor:pointer;">Dar de baja</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirmando }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:oklch(0.20 0 0 / 0.55);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div style="width:100%;max-width:340px;background:oklch(0.99 0 0);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px oklch(0.2 0 0 / 0.35);">
+        <div style="font-size:17px;font-weight:700;">¿Borrar el inventario en curso?</div>
+        <div style="font-size:13.5px;color:oklch(0.45 0 0);line-height:1.5;">{{ textoConfirmBorrar }}</div>
+        <div style="display:flex;gap:10px;padding-top:4px;">
+          <button onClick="{{ cancelarBorrar }}" style="flex:1;height:50px;border-radius:12px;border:1px solid oklch(0.85 0 0);background:oklch(0.99 0 0);font-size:15px;font-weight:600;cursor:pointer;color:oklch(0.3 0 0);">Cancelar</button>
+          <button onClick="{{ confirmarBorrar }}" style="flex:1;height:50px;border-radius:12px;border:none;background:oklch(0.48 0.16 28);color:oklch(0.99 0 0);font-size:15px;font-weight:700;cursor:pointer;">Sí, borrar</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:880},&quot;segundosSync&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:15,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:120,&quot;unit&quot;:&quot;s&quot;,&quot;section&quot;:&quot;Sincronización&quot;}}">
+// Conexión de fábrica: en un teléfono nuevo la app ya entra sola aquí
+// y solo pide correo y contraseña. La llave anon es pública por diseño.
+const SB_DEFAULT = {
+  url: 'https://knbvqbevrvbdbfxotqca.supabase.co',
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuYnZxYmV2cnZiZGJmeG90cWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMTY0MDIsImV4cCI6MjEwMjU5MjQwMn0.6TmoW7VPqkOHC2kLgueOCB-Wa8rfJGIgTJsD1Gei_rY'
+};
+const COLS = { existencia: 'existencia', pedido: 'cantidad_pedir', unidad: 'unidad' };
+const LS_CONEXION = 'thaithai-supabase';
+const LS_LOCAL = 'inv-thaithai-v2';
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const NOMBRES = {
+  'administracion@thaithaimerida.com.mx': 'Hugo',
+  'ingrid.mendoza.luna@gmail.com': 'Ingrid',
+  'neyjrdaniel12345@gmail.com': 'Daniel'
+};
+const GENEROS = { 'ingrid.mendoza.luna@gmail.com': 'F' };
+const nombreDe = (correo, usuarios) => {
+  const c = (correo || '').trim().toLowerCase();
+  if (!c) return '';
+  const u = (usuarios || []).find(x => (x.correo || '').toLowerCase() === c);
+  if (u) return u.nombre;
+  if (NOMBRES[c]) return NOMBRES[c];
+  const base = c.split('@')[0].split(/[._-]/)[0];
+  return base.charAt(0).toUpperCase() + base.slice(1);
+};
+const generoDe = (correo, usuarios) => {
+  const c = (correo || '').trim().toLowerCase();
+  const u = (usuarios || []).find(x => (x.correo || '').toLowerCase() === c);
+  return (u && u.genero) || GENEROS[c] || 'M';
+};
+const CORREOS_DEFAULT = [
+  'administracion@thaithaimerida.com.mx',
+  'ingrid.mendoza.luna@gmail.com',
+  'neyjrdaniel12345@gmail.com'
+];
+
+class Component extends DCLogic {
+  state = {
+    items: [], cats: [], cargado: false, datos: {}, prevEnvio: {},
+    pantalla: 'captura', busqueda: '', soloPendientes: false, abierto: undefined,
+    correos: CORREOS_DEFAULT.slice(), chef: '', guardado: '',
+    modo: 'local', sbUrl: '', sbKey: '', sesion: null,
+    usuarios: [], chefGenero: 'M', adminTab: 'articulos', usrForm: null, usrBaja: null,
+    adminItems: [], adminBusqueda: '', adminForm: null, adminMostrarBaja: false, adminBaja: null, adminMsg: '',
+    loginCorreo: '', loginPass: '', aviso: '', avisoTipo: 'info',
+    confirmando: false, enviando: false
+  };
+
+  componentDidMount() {
+    import('./inventario-datos.js').then(m => {
+      const cats = m.CATS;
+      const items = m.ITEMS.map(it => ({ id: it.id, name: it.name, cat: it.cat, min: it.min, prevInv: it.prevInv, prevOrd: it.prevOrd }));
+      this.setState({ items, cats, cargado: true });
+    });
+
+    let conf = null;
+    try { conf = JSON.parse(localStorage.getItem(LS_CONEXION) || 'null'); } catch (e) {}
+    if (!(conf && conf.url && conf.key) && SB_DEFAULT.url && SB_DEFAULT.key) conf = SB_DEFAULT;
+    if (conf && conf.url && conf.key) {
+      this.setState({ sbUrl: conf.url, sbKey: conf.key });
+      this.conectar(conf.url, conf.key);
+    } else {
+      this.cargarLocal();
+    }
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this._t); clearInterval(this._poll);
+    if (this._pend) this.escribirLocal(this._pend);
+  }
+
+  // ---------- modo local (sin Supabase) ----------
+  cargarLocal() {
+    this._q = {}; this._reintentos = {};
+    let g = null;
+    try { g = JSON.parse(localStorage.getItem(LS_LOCAL) || 'null'); } catch (e) {}
+    const validos = g && Array.isArray(g.correos) && g.correos.filter(c => /@/.test(c) && !/@restaurante\.com$/.test(c)).length === 3;
+    this.setState({
+      modo: 'local',
+      datos: (g && g.datos) || {},
+      correos: validos ? g.correos : CORREOS_DEFAULT.slice(),
+      chef: this.state.sesion ? this.state.chef : ''
+    });
+  }
+
+  escribirLocal(obj) { try { localStorage.setItem(LS_LOCAL, JSON.stringify(obj)); } catch (e) {} }
+
+  // ---------- Supabase ----------
+  conectar(url, key) {
+    const lib = window.supabase;
+    if (!lib || !lib.createClient) { this.setState({ aviso: 'No se pudo cargar la librería de Supabase. Revisa la conexión a internet.', avisoTipo: 'error' }); return this.cargarLocal(); }
+    this.sb = lib.createClient(url, key);
+    this.setState({ modo: 'nube' });
+    this.sb.auth.getSession().then(({ data }) => {
+      if (data && data.session) {
+        this.setState({ sesion: data.session, chef: nombreDe(data.session.user && data.session.user.email, this.state.usuarios), chefGenero: generoDe(data.session.user && data.session.user.email, this.state.usuarios), pantalla: 'captura' });
+        this.cargarNube();
+      }
+      else this.setState({ pantalla: 'login' });
+    });
+  }
+
+  async cargarNube() {
+    const r = await Promise.allSettled([
+      this.sb.from('articulos').select('*').eq('activo', true).order('orden'),
+      this.sb.from('config').select('correos').eq('id', 1).maybeSingle(),
+      this.sb.from('inventario_detalle').select('articulo_id,existencia,cantidad_pedir,unidad,updated_at,updated_by'),
+      this.sb.from('inventario_actual').select('datos').eq('id', 1).maybeSingle(),
+      this.sb.from('envios').select('datos,enviado_en').order('enviado_en', { ascending: false }).limit(1),
+      this.sb.from('usuarios').select('correo,nombre,genero').order('nombre')
+    ]);
+    const val = i => (r[i].status === 'fulfilled' ? r[i].value : { error: r[i].reason });
+    const [art, cfg, inv, respaldo, env, usr] = [val(0), val(1), val(2), val(3), val(4), val(5)];
+    const parcial = {};
+    const fallos = [];
+
+    if (art.data && art.data.length) {
+      this._tieneUnidad = Object.prototype.hasOwnProperty.call(art.data[0], 'unidad');
+      const items = art.data.map(a => ({ id: a.id, name: a.nombre, cat: a.proveedor, min: a.minimo || '', unidad: a.unidad || '' }));
+      parcial.items = items;
+      parcial.cats = [...new Set(items.map(i => i.cat))];
+      parcial.cargado = true;
+    } else if (art.error) fallos.push('artículos');
+
+    if (cfg.data && cfg.data.correos && cfg.data.correos.length) parcial.correos = cfg.data.correos;
+    else if (cfg.error) fallos.push('destinatarios');
+
+    if (inv.data) { this._sinDetalle = false; parcial.datos = this.filasADatos(inv.data); }
+    else {
+      // La tabla por artículo aún no existe: se lee el respaldo de solo lectura
+      this._sinDetalle = true;
+      this._q = {};
+      if (respaldo.data && respaldo.data.datos) parcial.datos = respaldo.data.datos;
+      else fallos.push('inventario en curso');
+    }
+
+    if (env.data && env.data[0]) { parcial.prevEnvio = env.data[0].datos || {}; parcial.ultimoEnvio = env.data[0].enviado_en; }
+    if (inv.data) parcial.maxCaptura = inv.data.reduce((m, r) => (r.updated_at && r.updated_at > m ? r.updated_at : m), '') || null;
+
+    if (usr.data) {
+      parcial.usuarios = usr.data;
+      const correo = this.state.sesion && this.state.sesion.user && this.state.sesion.user.email;
+      if (correo) { parcial.chef = nombreDe(correo, usr.data); parcial.chefGenero = generoDe(correo, usr.data); }
+    }
+
+    if (fallos.length) {
+      parcial.aviso = 'No se pudo leer de Supabase: ' + fallos.join(', ') + '. Corre supabase-inventario-detalle.sql / supabase.sql (no borran nada) y recarga.';
+      parcial.avisoTipo = 'error';
+    } else if (this._sinDetalle) {
+      parcial.aviso = 'Se está leyendo el inventario del respaldo. Para que lo que captures se guarde en la nube y los dos vean lo mismo, corre supabase-inventario-detalle.sql (no borra nada) y recarga.';
+      parcial.avisoTipo = 'error';
+    } else {
+      parcial.aviso = '';
+      parcial.avisoTipo = 'info';
+    }
+    this.setState(parcial);
+    clearInterval(this._poll);
+    const seg = Math.max(5, this.props.segundosSync ?? 15);
+    this._poll = setInterval(() => this.sincronizar(), seg * 1000);
+  }
+
+  filasADatos(filas) {
+    const datos = {};
+    (filas || []).forEach(r => {
+      const v = {};
+      if (r.existencia !== null && r.existencia !== undefined) v.existencia = r.existencia;
+      if (r.cantidad_pedir !== null && r.cantidad_pedir !== undefined) v.pedido = r.cantidad_pedir;
+      if (r.unidad) v.unidad = r.unidad;
+      datos[r.articulo_id] = v;
+    });
+    return datos;
+  }
+
+  async sincronizar() {
+    if (!this.sb || !this.state.sesion || this._sinDetalle || this.state.pantalla !== 'captura') return;
+    const { data } = await this.sb.from('inventario_detalle').select('articulo_id,existencia,cantidad_pedir,unidad,updated_at,updated_by');
+    if (!data) return;
+    if (data.length === 0 && Object.keys(this.state.datos).length > 0) {
+      // el administrador borró el inventario: descartar todo lo local
+      this._q = {}; this._reintentos = {};
+      const admin = nombreDe('administracion@thaithaimerida.com.mx', this.state.usuarios);
+      this.setState({ datos: {}, guardado: '', maxCaptura: null, aviso: admin + ' borró el inventario de esta semana para empezar de nuevo.', avisoTipo: 'info' });
+      this.persistir({ datos: {} });
+      return;
+    }
+    const maxCap = data.reduce((m, r) => (r.updated_at && r.updated_at > m ? r.updated_at : m), '');
+    if (maxCap && maxCap !== this.state.maxCaptura) this.setState({ maxCaptura: maxCap });
+    const remotos = this.filasADatos(data);
+    const porId = {};
+    data.forEach(r => { porId[r.articulo_id] = r; });
+    const datos = { ...this.state.datos };
+    const ajenos = [];   // cambios que vienen de otro usuario
+    let cambios = 0;
+    Object.keys(remotos).forEach(id => {
+      if (this._q && this._q[id]) return;              // tiene cambios míos sin subir
+      if (String(this._focus) === String(id)) return;   // lo estoy escribiendo ahora
+      if (JSON.stringify(datos[id] || {}) !== JSON.stringify(remotos[id])) {
+        datos[id] = remotos[id]; cambios++;
+        const r = porId[id];
+        if (r && r.updated_by && r.updated_by !== this.state.chef) ajenos.push(r);
+      }
+    });
+    const ids = new Set(data.map(r => String(r.articulo_id)));
+    Object.keys(datos).forEach(id => {
+      if (!ids.has(String(id)) && !(this._q && this._q[id]) && String(this._focus) !== String(id)) { delete datos[id]; cambios++; }
+    });
+    if (cambios) {
+      const parcial = { datos };
+      const reales = ajenos.filter(r => r.updated_by && r.updated_by !== 'migración');
+      if (reales.length) {
+        const ult = reales.sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))[0];
+        if (reales.length > 1) {
+          parcial.guardado = ult.updated_by + ' capturó ' + reales.length + ' artículos';
+        } else {
+          const it = this.state.items.find(x => String(x.id) === String(ult.articulo_id));
+          parcial.guardado = ult.updated_by + ' actualizó ' + (it ? it.name : 'un artículo');
+        }
+      }
+      // cambios propios (eco de mis upserts) no tocan el aviso: sigue "guardado en la nube ✓"
+      this.setState(parcial);
+    }
+  }
+
+  // Sube SOLO el artículo y el campo que cambió, con retraso por artículo
+  encolar(id, campo, valor) {
+    if (!this.sb || !this.state.sesion || this._sinDetalle) return;
+    const col = COLS[campo];
+    if (!col) return;
+    this._q = this._q || {}; this._qt = this._qt || {};
+    this._q[id] = { ...(this._q[id] || {}), [col]: valor };
+    clearTimeout(this._qt[id]);
+    this._qt[id] = setTimeout(() => this.subirItem(id), 700);
+  }
+
+  async subirItem(id) {
+    if (!this._q || !this._q[id]) return;
+    const fila = this._q[id];
+    delete this._q[id];
+    const { error } = await this.sb.from('inventario_detalle').upsert({
+      articulo_id: Number(id), ...fila,
+      updated_at: new Date().toISOString(), updated_by: this.state.chef || 'sin sesión'
+    }, { onConflict: 'articulo_id' });
+    if (error) {
+      if (/PGRST205|schema cache|does not exist|42P01/i.test(error.message || '')) {
+        this._sinDetalle = true; this._q = {};
+        this.setState({ guardado: 'sin guardar ✕', aviso: 'Falta correr supabase-inventario-detalle.sql para guardar en la nube. Por ahora se guarda solo en este teléfono.', avisoTipo: 'error' });
+        return;
+      }
+      this._q[id] = { ...fila, ...(this._q[id] || {}) };
+      this._reintentos = this._reintentos || {};
+      const n = (this._reintentos[id] || 0) + 1;
+      this._reintentos[id] = n;
+      this.setState({ guardado: 'sin guardar ✕ · reintentando' });
+      if (n <= 5) { clearTimeout(this._qt[id]); this._qt[id] = setTimeout(() => this.subirItem(id), Math.min(30000, 1000 * Math.pow(2, n))); }
+      else { delete this._q[id]; delete this._reintentos[id]; this.setState({ guardado: 'sin guardar ✕' }); }
+    } else {
+      if (this._reintentos) delete this._reintentos[id];
+      this.setState({ guardado: 'guardado en la nube ✓' });
+    }
+  }
+
+  async vaciarDetalle() {
+    this._q = {}; this._reintentos = {};
+    if (!(this.sb && this.state.sesion) || this._sinDetalle) return true;
+    const { error } = await this.sb.from('inventario_detalle').delete().gte('articulo_id', 0);
+    if (error) {
+      this.setState({ aviso: 'No se pudo borrar el inventario en la nube: ' + error.message + '. Inténtalo otra vez.', avisoTipo: 'error' });
+      this.sincronizar();
+      return false;
+    }
+    return true;
+  }
+
+  // ---------- guardado (rebotado) ----------
+  persistir(parcial) {
+    this._pend = { datos: this.state.datos, correos: this.state.correos, chef: this.state.chef, ...(this._pend || {}), ...parcial };
+    clearTimeout(this._t);
+    this._t = setTimeout(async () => {
+      const p = this._pend; this._pend = null;
+      this.escribirLocal(p);
+      if (!(this.sb && this.state.sesion)) this.setState({ guardado: 'guardado ✓' });
+    }, 700);
+  }
+
+  async guardarCorreos(correos) {
+    if (this.sb && this.state.sesion) await this.sb.from('config').upsert({ id: 1, correos, actualizado: new Date().toISOString() });
+  }
+
+  campo(id, key, valor) {
+    const datos = { ...this.state.datos, [id]: { ...(this.state.datos[id] || {}), [key]: valor } };
+    this.setState({ datos, maxCaptura: new Date().toISOString() }, () => this.persistir({ datos }));
+    this.encolar(id, key, valor);
+  }
+
+  unidadPorDefecto(it) {
+    if (it.unidad) return it.unidad;
+    const t = ((it.min || '') + ' ' + it.name).toLowerCase();
+    if (/\bkgs?\b/.test(t)) return 'kg';
+    if (/\blts?\b|litro/.test(t)) return 'lt';
+    if (/\bgrs?\b/.test(t)) return 'gr';
+    if (/\bml\b/.test(t)) return 'ml';
+    if (/\bpaq/.test(t)) return 'paq';
+    if (/\bord/.test(t)) return 'ord';
+    if (/\bmtr|metro/.test(t)) return 'mtr';
+    if (/\bcaja/.test(t)) return 'caja';
+    return 'pz';
+  }
+
+  // ---------- PDF ----------
+  construirPdf() {
+    const J = window.jspdf && window.jspdf.jsPDF;
+    if (!J) return null;
+    const s = this.state;
+    const doc = new J({ unit: 'pt', format: 'letter' });
+    const ahora = new Date();
+    const fecha = ahora.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const hora = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(17);
+    doc.text('Thai Thai · Inventario semanal', 40, 52);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(90);
+    doc.text('Enviado el ' + fecha + ' a las ' + hora, 40, 70);
+    doc.text('Capturó: ' + (s.chef || '—'), 40, 85);
+    doc.setTextColor(20);
+
+    let y = 108;
+    s.cats.forEach(cat => {
+      const filas = s.items.filter(it => it.cat === cat).map(it => {
+        const v = s.datos[it.id] || {};
+        const u = v.unidad || this.unidadPorDefecto(it);
+        const pedir = v.pedido !== undefined && v.pedido !== '' && parseFloat(v.pedido) > 0 ? v.pedido + ' ' + u : '';
+        return [it.name, it.min || '—', (v.existencia === undefined || v.existencia === '') ? '—' : v.existencia + ' ' + u, pedir];
+      });
+      if (!filas.length) return;
+      doc.autoTable({
+        startY: y,
+        head: [[cat, 'Mínimo', 'Existencia', 'Pedir']],
+        body: filas,
+        theme: 'grid',
+        styles: { font: 'helvetica', fontSize: 9, cellPadding: 4, textColor: 30, lineColor: 220 },
+        headStyles: { fillColor: [38, 38, 38], textColor: 255, fontStyle: 'bold', fontSize: 9.5 },
+        columnStyles: { 0: { cellWidth: 250 }, 1: { cellWidth: 70 }, 2: { cellWidth: 85 }, 3: { cellWidth: 85, fontStyle: 'bold' } },
+        margin: { left: 40, right: 40 }
+      });
+      y = doc.lastAutoTable.finalY + 18;
+    });
+
+    // ---- Hoja final: resumen de compra ----
+    const compra = s.cats.map(cat => {
+      const filas = s.items.filter(it => it.cat === cat).map(it => {
+        const v = s.datos[it.id] || {};
+        if (!(v.pedido !== undefined && v.pedido !== '' && parseFloat(v.pedido) > 0)) return null;
+        return [it.name, v.pedido + ' ' + (v.unidad || this.unidadPorDefecto(it))];
+      }).filter(Boolean);
+      return { cat, filas };
+    }).filter(g => g.filas.length);
+    const totalArts = compra.reduce((n, g) => n + g.filas.length, 0);
+
+    doc.addPage();
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(17);
+    doc.text('Thai Thai · Inventario semanal', 40, 52);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(90);
+    doc.text('Enviado el ' + fecha + ' a las ' + hora, 40, 70);
+    doc.text('Capturó: ' + (s.chef || '—'), 40, 85);
+    doc.setTextColor(20);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+    doc.text('Resumen de compra · ' + totalArts + (totalArts === 1 ? ' artículo' : ' artículos'), 40, 116);
+
+    let y2 = 136;
+    compra.forEach(g => {
+      doc.autoTable({
+        startY: y2,
+        head: [[g.cat, 'Pedir']],
+        body: g.filas,
+        theme: 'grid',
+        styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 4, textColor: 30, lineColor: 220 },
+        headStyles: { fillColor: [38, 38, 38], textColor: 255, fontStyle: 'bold', fontSize: 9.5 },
+        columnStyles: { 0: { cellWidth: 385 }, 1: { cellWidth: 105, fontStyle: 'bold' } },
+        margin: { left: 40, right: 40 }
+      });
+      y2 = doc.lastAutoTable.finalY + 16;
+    });
+
+    if (!compra.length) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(90);
+      doc.text('No hay artículos por comprar esta semana.', 40, y2);
+    } else {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20);
+      doc.text(compra.length + (compra.length === 1 ? ' proveedor · ' : ' proveedores · ') + totalArts + (totalArts === 1 ? ' artículo por comprar' : ' artículos por comprar'), 40, y2 + 6);
+    }
+
+    return doc;
+  }
+
+  descargarPdf() {
+    const doc = this.construirPdf();
+    if (!doc) return this.setState({ aviso: 'El generador de PDF aún se está cargando, intenta otra vez.', avisoTipo: 'error' });
+    doc.save('inventario-thaithai-' + new Date().toISOString().slice(0, 10) + '.pdf');
+  }
+
+  async enviarTodo(porPedir) {
+    this.setState({ enviando: true, aviso: '' });
+    if (this.sb && this.state.sesion) {
+      // subir lo que esté pendiente y releer todas las filas para el snapshot
+      await Promise.all(Object.keys(this._q || {}).map(id => this.subirItem(id)));
+      const { data } = await this.sb.from('inventario_detalle').select('articulo_id,existencia,cantidad_pedir,unidad');
+      if (data) {
+        const datos = this.filasADatos(data);
+        await new Promise(r => this.setState({ datos }, r));
+        porPedir = this.state.items.filter(it => {
+          const v = (datos[it.id] || {}).pedido;
+          return v !== undefined && v !== '' && parseFloat(v) > 0;
+        });
+      }
+    }
+    const s = this.state;
+    const doc = this.construirPdf();
+    if (!doc) return this.setState({ enviando: false, aviso: 'No se pudo generar el PDF.', avisoTipo: 'error' });
+    const base64 = doc.output('datauristring').split(',')[1];
+    const ahora = new Date();
+    const lineas = porPedir.map(it => {
+      const v = s.datos[it.id] || {};
+      const u = v.unidad || this.unidadPorDefecto(it);
+      return { proveedor: it.cat, articulo: it.name, existencia: (v.existencia || '0') + ' ' + u, pedir: v.pedido + ' ' + u };
+    });
+
+    if (!this.sb || !s.sesion) {
+      this.descargarPdf();
+      this.setState({ enviando: false, pantalla: 'enviado', aviso: 'Sin conexión a Supabase: se descargó el PDF, pero no se envió el correo.', avisoTipo: 'error' });
+      return;
+    }
+
+    try {
+      await this.sb.from('envios').insert({
+        enviado_en: ahora.toISOString(), responsable: s.chef,
+        datos: s.datos, lineas, total_pedir: lineas.length
+      });
+      const filas = lineas.map(l => '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee">' + l.proveedor + '</td><td style="padding:4px 8px;border-bottom:1px solid #eee">' + l.articulo + '</td><td style="padding:4px 8px;border-bottom:1px solid #eee">' + l.existencia + '</td><td style="padding:4px 8px;border-bottom:1px solid #eee"><b>' + l.pedir + '</b></td></tr>').join('');
+      const cuerpoHtml = '<div style="font-family:Helvetica,Arial,sans-serif;color:#222"><h2>Thai Thai · Inventario semanal</h2><p>Enviado el ' + ahora.toLocaleString('es-MX') + ' · Capturó: ' + s.chef + '</p><table style="border-collapse:collapse;font-size:13px"><tr><th align="left" style="padding:4px 8px">Proveedor</th><th align="left" style="padding:4px 8px">Artículo</th><th align="left" style="padding:4px 8px">Existencia</th><th align="left" style="padding:4px 8px">Pedir</th></tr>' + filas + '</table><p style="font-size:12px;color:#666">La tabla completa va en el PDF adjunto.</p></div>';
+
+      const { error } = await this.sb.functions.invoke('enviar-inventario', {
+        body: {
+          destinatarios: s.correos.filter(Boolean),
+          asunto: 'Inventario Thai Thai · ' + ahora.toLocaleDateString('es-MX') + ' · ' + s.chef,
+          cuerpoHtml,
+          pdfBase64: base64,
+          nombreArchivo: 'inventario-thaithai-' + ahora.toISOString().slice(0, 10) + '.pdf'
+        }
+      });
+      if (error) throw error;
+      this.setState({ enviando: false, pantalla: 'enviado', prevEnvio: s.datos, aviso: '' });
+    } catch (e) {
+      this.setState({ enviando: false, pantalla: 'enviado', aviso: 'El inventario quedó guardado, pero el correo no salió: ' + (e.message || e), avisoTipo: 'error' });
+    }
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- administración del catálogo ----------
+  async cargarAdmin() {
+    if (!this.sb) return;
+    const { data, error } = await this.sb.from('articulos').select('*').order('orden');
+    if (error) return this.setState({ adminMsg: 'No se pudo leer el catálogo: ' + error.message });
+    if (data && data[0]) this._tieneUnidad = Object.prototype.hasOwnProperty.call(data[0], 'unidad');
+    this.setState({
+      adminItems: (data || []).map(a => ({ ...a, unidad: a.unidad || '' })),
+      adminMsg: this._tieneUnidad === false ? 'Para usar el campo de unidad, vuelve a correr supabase.sql (no borra nada). Lo demás ya funciona.' : ''
+    });
+  }
+
+  async guardarArticulo() {
+    const f = this.state.adminForm;
+    if (!f || !f.nombre.trim() || !f.proveedor) return this.setState({ adminMsg: 'Falta el nombre o el proveedor.' });
+    const fila = { nombre: f.nombre.trim(), proveedor: f.proveedor, minimo: (f.minimo || '').trim() };
+    if (this._tieneUnidad !== false) fila.unidad = f.unidad || '';
+    let error;
+    if (f.id) {
+      ({ error } = await this.sb.from('articulos').update(fila).eq('id', f.id));
+    } else {
+      const maxId = this.state.adminItems.reduce((m, a) => Math.max(m, a.id), 0);
+      const maxOrden = this.state.adminItems.reduce((m, a) => Math.max(m, a.orden || 0), 0);
+      ({ error } = await this.sb.from('articulos').insert({ id: maxId + 1, orden: maxOrden + 1, activo: true, ...fila }));
+    }
+    if (error) return this.setState({ adminMsg: 'No se pudo guardar: ' + error.message });
+    this.setState({ adminForm: null, adminMsg: f.id ? 'Artículo actualizado.' : 'Artículo agregado.' });
+    await this.cargarAdmin();
+    this.cargarNube();
+  }
+
+  async cargarUsuarios() {
+    if (!this.sb) return;
+    const { data, error } = await this.sb.from('usuarios').select('correo,nombre,genero').order('nombre');
+    if (error) return this.setState({ adminMsg: 'No se pudo leer usuarios: ' + error.message + ' — corre supabase-usuarios.sql.' });
+    this.setState({ usuarios: data || [], adminMsg: '' });
+  }
+
+  async guardarUsuario() {
+    const f = this.state.usrForm;
+    if (!f || !/.+@.+\..+/.test(f.correo || '') || !(f.nombre || '').trim()) return this.setState({ adminMsg: 'Falta un correo válido o el nombre.' });
+    const { error } = await this.sb.from('usuarios').upsert({
+      correo: f.correo.trim().toLowerCase(), nombre: f.nombre.trim(), genero: f.genero || 'M'
+    });
+    if (error) return this.setState({ adminMsg: 'No se pudo guardar: ' + error.message });
+    this.setState({ usrForm: null, adminMsg: 'Usuario guardado.' });
+    await this.cargarUsuarios();
+  }
+
+  async quitarUsuario(correo) {
+    const { error } = await this.sb.from('usuarios').delete().eq('correo', correo);
+    this.setState({ usrBaja: null, adminMsg: error ? 'No se pudo quitar: ' + error.message : 'Usuario quitado de la lista.' });
+    await this.cargarUsuarios();
+  }
+
+  async cambiarActivo(id, activo) {
+    const { error } = await this.sb.from('articulos').update({ activo }).eq('id', id);
+    this.setState({ adminBaja: null, adminMsg: error ? 'No se pudo cambiar: ' + error.message : (activo ? 'Artículo reactivado.' : 'Artículo dado de baja.') });
+    await this.cargarAdmin();
+    this.cargarNube();
+  }
+
+  renderVals() {
+    const s = this.state;
+    const hoy = new Date();
+    const fechaTitulo = 'Semana del ' + hoy.getDate() + ' de ' + MESES[hoy.getMonth()];
+
+    const d = id => s.datos[id] || {};
+    const lleno = it => (d(it.id).existencia || '') !== '';
+    const totales = s.items.length;
+    const hechos = s.items.filter(lleno).length;
+    const porPedir = s.items.filter(it => { const v = d(it.id).pedido; return v !== undefined && v !== '' && parseFloat(v) > 0; });
+
+    const q = s.busqueda.trim().toLowerCase();
+    const visible = it => (!q || it.name.toLowerCase().includes(q)) && (!s.soloPendientes || !lleno(it));
+    const abierto = s.abierto === undefined ? s.cats[0] : s.abierto;
+
+    const textoPrev = it => {
+      const p = s.prevEnvio[it.id];
+      if (p) {
+        const u = p.unidad || '';
+        const partes = [];
+        if (p.existencia !== undefined && p.existencia !== '') partes.push('tenía ' + p.existencia + ' ' + u);
+        if (p.pedido !== undefined && p.pedido !== '' && parseFloat(p.pedido) > 0) partes.push('pidió ' + p.pedido + ' ' + u);
+        if (partes.length) return 'sem. pasada: ' + partes.join(' · ');
+      }
+      const f = [it.prevInv ? 'tenía ' + it.prevInv : '', it.prevOrd ? 'pidió ' + it.prevOrd : ''].filter(Boolean).join(' · ');
+      return f ? 'sem. pasada: ' + f : 'sin registro previo';
+    };
+
+    const grupos = s.cats.map(cat => {
+      const mostrar = q ? true : abierto === cat;
+      const items = (mostrar ? s.items.filter(it => it.cat === cat && visible(it)) : []).map(it => {
+        const v = d(it.id);
+        const ok = lleno(it);
+        const pide = v.pedido !== undefined && v.pedido !== '' && parseFloat(v.pedido) > 0;
+        return {
+          id: it.id, nombre: it.name, min: it.min || '—', prev: textoPrev(it),
+          existencia: v.existencia === undefined ? '' : v.existencia,
+          pedido: v.pedido === undefined ? '' : v.pedido,
+          unidad: v.unidad || this.unidadPorDefecto(it),
+          fondo: ok ? 'oklch(0.985 0 0)' : 'oklch(0.995 0 0)',
+          borde: ok ? 'oklch(0.70 0 0)' : 'oklch(0.90 0 0)',
+          check: ok ? '✓' : '',
+          checkColor: 'oklch(0.30 0 0)',
+          pedirBorde: pide ? 'oklch(0.48 0 0)' : 'oklch(0.86 0 0)',
+          pedirFondo: pide ? 'oklch(0.925 0 0)' : 'oklch(0.995 0 0)',
+          setExistencia: e => this.campo(it.id, 'existencia', e.target.value),
+          setPedido: e => this.campo(it.id, 'pedido', e.target.value),
+          setUnidad: e => this.campo(it.id, 'unidad', e.target.value),
+          sinFalta: () => {
+            const ex = (s.datos[it.id] || {}).existencia || '0';
+            const datos = { ...s.datos, [it.id]: { ...(s.datos[it.id] || {}), existencia: ex, pedido: '0' } };
+            this.setState({ datos }, () => this.persistir({ datos }));
+            this.encolar(it.id, 'existencia', ex);
+            this.encolar(it.id, 'pedido', '0');
+          },
+          enfocar: () => { this._focus = it.id; },
+          desenfocar: () => { if (this._focus === it.id) this._focus = null; }
+        };
+      });
+      const totalCat = s.items.filter(it => it.cat === cat).length;
+      const hechosCat = s.items.filter(it => it.cat === cat && lleno(it)).length;
+      return {
+        nombre: cat, ancla: 'g' + cat.replace(/[^A-Za-z0-9]/g, ''), items,
+        contador: hechosCat + '/' + totalCat,
+        flecha: items.length ? '▾' : '▸',
+        abrir: () => this.setState({ abierto: abierto === cat ? null : cat }),
+        oculto: q && items.length === 0
+      };
+    }).filter(g => !g.oculto);
+
+    const chips = s.cats.map(cat => {
+      const totalCat = s.items.filter(it => it.cat === cat).length;
+      const hechosCat = s.items.filter(it => it.cat === cat && lleno(it)).length;
+      const listo = totalCat > 0 && hechosCat === totalCat;
+      return {
+        etiqueta: cat.replace('DESECHABLES ', '').replace('PRODUCTOS DE ', '') + '  ' + hechosCat + '/' + totalCat,
+        borde: listo ? 'oklch(0.30 0 0)' : 'oklch(0.87 0 0)',
+        fondo: listo ? 'oklch(0.25 0 0)' : 'oklch(0.99 0 0)',
+        color: listo ? 'oklch(0.97 0 0)' : 'oklch(0.40 0 0)',
+        ir: () => this.setState({ abierto: cat, busqueda: '' }, () => setTimeout(() => {
+          const el = document.getElementById('g' + cat.replace(/[^A-Za-z0-9]/g, ''));
+          if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 200);
+        }, 30))
+      };
+    });
+
+    const pedidoGrupos = s.cats.map(cat => {
+      const lineas = porPedir.filter(it => it.cat === cat).map(it => {
+        const v = d(it.id);
+        const u = v.unidad || this.unidadPorDefecto(it);
+        return { nombre: it.name, tengo: 'tengo ' + (v.existencia || '0') + ' ' + u, pedir: v.pedido + ' ' + u };
+      });
+      return { nombre: cat, lineas, contador: lineas.length + (lineas.length === 1 ? ' artículo' : ' artículos') };
+    }).filter(g => g.lineas.length > 0);
+
+    const avisoLocal = s.modo === 'local' && !s.aviso;
+    const avisoTexto = s.aviso || (avisoLocal ? 'Modo sin conexión: el avance se guarda solo en este teléfono y el botón de enviar descarga el PDF. Conecta Supabase desde ⚙ para compartirlo y mandar el correo.' : '');
+
+    return {
+      fechaTitulo,
+      enCaptura: s.pantalla === 'captura',
+      enRevision: s.pantalla === 'revision',
+      enEnviado: s.pantalla === 'enviado',
+      enConfig: s.pantalla === 'config',
+      enLogin: s.pantalla === 'login',
+      enConexion: s.pantalla === 'conexion',
+      confirmando: s.confirmando,
+      grupos, chips, pedidoGrupos,
+      avisoVisible: !!avisoTexto,
+      avisoTexto,
+      avisoFondo: s.avisoTipo === 'error' && s.aviso ? 'oklch(0.96 0.03 28)' : 'oklch(0.94 0 0)',
+      avisoBorde: s.avisoTipo === 'error' && s.aviso ? 'oklch(0.84 0.06 28)' : 'oklch(0.88 0 0)',
+      avisoColor: s.avisoTipo === 'error' && s.aviso ? 'oklch(0.40 0.13 28)' : 'oklch(0.40 0 0)',
+      busqueda: s.busqueda,
+      setBusqueda: e => this.setState({ busqueda: e.target.value }),
+      toggleFaltantes: () => this.setState({ soloPendientes: !s.soloPendientes }),
+      filtroBorde: s.soloPendientes ? 'oklch(0.25 0 0)' : 'oklch(0.87 0 0)',
+      filtroFondo: s.soloPendientes ? 'oklch(0.25 0 0)' : 'oklch(0.99 0 0)',
+      filtroTexto: s.soloPendientes ? 'oklch(0.97 0 0)' : 'oklch(0.42 0 0)',
+      progresoPct: totales ? Math.round((hechos / totales) * 100) + '%' : '0%',
+      progresoTexto: hechos + '/' + (totales || '…'),
+      resumenBarra: porPedir.length + ' por pedir · ' + (totales - hechos) + ' sin capturar',
+      guardadoTexto: s.chef ? s.guardado : 'sin sesión',
+      saludo: s.chef ? (s.chefGenero === 'F' ? 'Bienvenida, ' : 'Bienvenido, ') + s.chef : 'Inicia sesión para capturar',
+      pieCaptura: s.cargado ? 'Fin de la lista · ' + totales + ' artículos' : 'Cargando artículos…',
+      revisionIntro: porPedir.length
+        ? 'Revisa el pedido antes de enviarlo. Solo aparecen los artículos con cantidad a pedir; el PDF lleva la tabla completa.'
+        : 'Todavía no hay artículos con cantidad a pedir. Vuelve y captura lo que haga falta.',
+      textoEnviar: s.enviando ? 'Enviando…' : 'Enviar inventario',
+      tituloCapturando: s.sesion ? 'Quién está capturando' : 'Sin sesión iniciada',
+      textoSync: s.modo === 'nube'
+        ? 'Se toma del usuario que inició sesión y así queda en el PDF, en el asunto del correo y en el historial. El avance se guarda en Supabase, así que los dos ven lo mismo y pueden turnarse.'
+        : 'Se toma del usuario que inicia sesión. Sin conexión el avance se guarda solo en este teléfono.',
+      textoConfirmBorrar: 'Se borran las ' + hechos + ' capturas de esta semana' + (s.modo === 'nube' ? ' para los dos teléfonos' : '') + '. Los envíos ya mandados no se tocan.',
+      correos: s.correos.map((valor, i) => ({
+        valor,
+        set: e => {
+          const correos = s.correos.slice(); correos[i] = e.target.value;
+          this.setState({ correos }, () => { this.persistir({ correos }); this.guardarCorreos(correos); });
+        }
+      })),
+      chefNombre: s.chef || 'Sin sesión',
+      chefVisible: !!(s.sesion && s.chef),
+      chefCorreo: s.sesion && s.sesion.user ? s.sesion.user.email : 'sin sesión iniciada',
+      enviadoDetalle: 'Se registró el pedido de ' + porPedir.length + ' artículos, agrupado por proveedor, con el PDF adjunto (fecha, hora y responsable incluidos).',
+      irRevision: () => { this.setState({ pantalla: 'revision' }); window.scrollTo(0, 0); },
+      volverCaptura: () => this.setState({ pantalla: 'captura' }),
+      irConfig: () => { this.setState({ pantalla: 'config' }); window.scrollTo(0, 0); },
+      confirmConexion: !!s.confirmConexion,
+      pedirConexion: () => this.setState({ confirmConexion: true }),
+      cancelarConexion: () => this.setState({ confirmConexion: false }),
+      irConexion: () => this.setState({ pantalla: 'conexion', confirmConexion: false }),
+      enviar: () => { if (!s.enviando) this.setState({ confirmEnvio: true }); },
+      confirmEnvioVisible: !!s.confirmEnvio,
+      avisoEnvioVisible: !porPedir.length || (totales > 0 && (totales - hechos) > totales / 2),
+      avisoEnvioTexto: !porPedir.length
+        ? '⚠ No hay artículos por pedir. ¿Enviar de todos modos como registro?'
+        : '⚠ Faltan ' + (totales - hechos) + ' artículos por capturar. ¿Seguro que quieres enviar así?',
+      lineasEnvio: [
+        { texto: porPedir.length + (porPedir.length === 1 ? ' artículo por pedir' : ' artículos por pedir') },
+        { texto: (totales - hechos) + ' sin capturar' },
+        { texto: 'Se enviará a los ' + s.correos.filter(Boolean).length + ' correos con el PDF adjunto' },
+        { texto: 'Capturó: ' + (s.chef || 'sin sesión') }
+      ],
+      cancelarEnvio: () => this.setState({ confirmEnvio: null }),
+      confirmarEnvio: () => { this.setState({ confirmEnvio: null }); this.enviarTodo(porPedir); },
+      seguirCapturando: () => { this.setState({ pantalla: 'captura' }); window.scrollTo(0, 0); },
+      pedirNuevo: () => this.setState({ confirmNuevo: true }),
+      cancelarNuevo: () => this.setState({ confirmNuevo: false }),
+      confirmNuevoVisible: !!s.confirmNuevo,
+      reinicioVisible: s.pantalla === 'captura' && !!s.ultimoEnvio && hechos > 0 && !!s.maxCaptura && s.maxCaptura <= s.ultimoEnvio,
+      listaOpacidad: (s.pantalla === 'captura' && !!s.ultimoEnvio && hechos > 0 && !!s.maxCaptura && s.maxCaptura <= s.ultimoEnvio) ? 0.55 : 1,
+      pedirSemana: () => this.setState({ confirmSemana: true }),
+      cancelarSemana: () => this.setState({ confirmSemana: false }),
+      confirmSemanaVisible: !!s.confirmSemana,
+      confirmarSemana: async () => {
+        this.setState({ confirmSemana: false });
+        const ok = await this.vaciarDetalle();
+        if (ok) this.setState({ datos: {}, maxCaptura: null, busqueda: '', soloPendientes: false }, () => { this.persistir({ datos: {} }); window.scrollTo(0, 0); });
+      },
+      reinicioTexto: 'Este inventario ya se envió el ' + (s.ultimoEnvio ? new Date(s.ultimoEnvio).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }) : '') + '. ¿Empezar el de esta semana?',
+      descargarPdf: () => this.descargarPdf(),
+      nuevoInventario: async () => {
+        const ok = await this.vaciarDetalle();
+        this.setState({ datos: ok ? {} : s.datos, pantalla: 'captura', busqueda: '', soloPendientes: false, confirmNuevo: false }, () => { if (ok) this.persistir({ datos: {} }); window.scrollTo(0, 0); });
+      },
+      pedirBorrar: () => this.setState({ confirmando: true }),
+      cancelarBorrar: () => this.setState({ confirmando: false }),
+      confirmarBorrar: async () => {
+        const ok = await this.vaciarDetalle();
+        this.setState({ datos: ok ? {} : s.datos, confirmando: false, pantalla: 'captura' }, () => { if (ok) this.persistir({ datos: {} }); });
+      },
+      headerVisible: s.pantalla !== 'admin' && s.pantalla !== 'config',
+      esAdmin: !!(s.sesion && s.sesion.user && (s.sesion.user.email || '').toLowerCase() === 'administracion@thaithaimerida.com.mx'),
+      enAdmin: s.pantalla === 'admin',
+      irAdmin: () => { this.setState({ pantalla: 'admin', adminMsg: '', adminForm: null, adminTab: 'articulos' }); this.cargarAdmin(); this.cargarUsuarios(); window.scrollTo(0, 0); },
+      textoAgregar: s.adminTab === 'usuarios' ? '+ Agregar usuario' : '+ Agregar artículo',
+      agregarEnTab: () => (s.adminTab === 'usuarios'
+        ? this.setState({ usrForm: { correo: '', nombre: '', genero: 'M' }, adminMsg: '' }, () => setTimeout(() => window.scrollTo(0, 0), 30))
+        : this.setState({ adminForm: { nombre: '', proveedor: s.cats[0] || '', minimo: '', unidad: '' }, adminMsg: '' }, () => setTimeout(() => window.scrollTo(0, 0), 30))),
+      tabArticulos: s.adminTab !== 'usuarios',
+      tabUsuarios: s.adminTab === 'usuarios',
+      estiloTabArt: s.adminTab !== 'usuarios' ? 'flex:1;height:38px;border-radius:10px;border:1px solid oklch(0.25 0 0);background:oklch(0.25 0 0);color:oklch(0.97 0 0);font-size:13px;font-weight:600;cursor:pointer;' : 'flex:1;height:38px;border-radius:10px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);color:oklch(0.40 0 0);font-size:13px;font-weight:600;cursor:pointer;',
+      estiloTabUsr: s.adminTab === 'usuarios' ? 'flex:1;height:38px;border-radius:10px;border:1px solid oklch(0.25 0 0);background:oklch(0.25 0 0);color:oklch(0.97 0 0);font-size:13px;font-weight:600;cursor:pointer;' : 'flex:1;height:38px;border-radius:10px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);color:oklch(0.40 0 0);font-size:13px;font-weight:600;cursor:pointer;',
+      verArticulos: () => this.setState({ adminTab: 'articulos', usrForm: null }),
+      verUsuarios: () => { this.setState({ adminTab: 'usuarios', adminForm: null }); this.cargarUsuarios(); window.scrollTo(0, 0); },
+      usuariosLista: s.usuarios.map(u => ({
+        correo: u.correo, nombre: u.nombre,
+        saludo: (u.genero === 'F' ? 'Bienvenida' : 'Bienvenido') + ', ' + u.nombre,
+        editar: () => this.setState({ usrForm: { correo: u.correo, nombre: u.nombre, genero: u.genero || 'M' }, adminMsg: '' }, () => setTimeout(() => window.scrollTo(0, 0), 30)),
+        quitar: () => this.setState({ usrBaja: u })
+      })),
+      usrFormVisible: !!s.usrForm,
+      usrCorreo: s.usrForm ? s.usrForm.correo : '',
+      usrNombre: s.usrForm ? s.usrForm.nombre : '',
+      setUsrCorreo: e => this.setState({ usrForm: { ...s.usrForm, correo: e.target.value } }),
+      setUsrNombre: e => this.setState({ usrForm: { ...s.usrForm, nombre: e.target.value } }),
+      estiloGenM: (s.usrForm && s.usrForm.genero !== 'F') ? 'flex:1;height:46px;border-radius:10px;border:1px solid oklch(0.25 0 0);background:oklch(0.25 0 0);color:oklch(0.97 0 0);font-size:13.5px;font-weight:600;cursor:pointer;' : 'flex:1;height:46px;border-radius:10px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);color:oklch(0.40 0 0);font-size:13.5px;font-weight:600;cursor:pointer;',
+      estiloGenF: (s.usrForm && s.usrForm.genero === 'F') ? 'flex:1;height:46px;border-radius:10px;border:1px solid oklch(0.25 0 0);background:oklch(0.25 0 0);color:oklch(0.97 0 0);font-size:13.5px;font-weight:600;cursor:pointer;' : 'flex:1;height:46px;border-radius:10px;border:1px solid oklch(0.87 0 0);background:oklch(0.99 0 0);color:oklch(0.40 0 0);font-size:13.5px;font-weight:600;cursor:pointer;',
+      setGenM: () => this.setState({ usrForm: { ...s.usrForm, genero: 'M' } }),
+      setGenF: () => this.setState({ usrForm: { ...s.usrForm, genero: 'F' } }),
+      nuevoUsuario: () => this.setState({ usrForm: { correo: '', nombre: '', genero: 'M' }, adminMsg: '' }, () => setTimeout(() => window.scrollTo(0, 0), 30)),
+      guardarUsr: () => this.guardarUsuario(),
+      cancelarUsr: () => this.setState({ usrForm: null }),
+      usrBajaVisible: !!s.usrBaja,
+      usrBajaNombre: s.usrBaja ? s.usrBaja.nombre + ' · ' + s.usrBaja.correo : '',
+      cancelarUsrBaja: () => this.setState({ usrBaja: null }),
+      confirmarUsrBaja: () => this.quitarUsuario(s.usrBaja.correo),
+      adminMsg: s.adminMsg,
+      adminMsgVisible: !!s.adminMsg,
+      adminBusqueda: s.adminBusqueda,
+      setAdminBusqueda: e => this.setState({ adminBusqueda: e.target.value }),
+      adminMostrarBaja: s.adminMostrarBaja,
+      textoMostrarBaja: s.adminMostrarBaja ? 'Ver activos' : 'Ver dados de baja',
+      toggleMostrarBaja: () => this.setState({ adminMostrarBaja: !s.adminMostrarBaja }),
+      adminResumen: s.adminItems.filter(a => a.activo).length + ' activos · ' + s.adminItems.filter(a => !a.activo).length + ' dados de baja',
+      adminGruposVisibles: s.adminTab === 'usuarios' ? [] : (() => {
+        const aq = s.adminBusqueda.trim().toLowerCase();
+        const lista = s.adminItems.filter(a => (s.adminMostrarBaja ? !a.activo : a.activo) && (!aq || a.nombre.toLowerCase().includes(aq)));
+        const provs = [...new Set(lista.map(a => a.proveedor))];
+        const abiertoAdmin = s.adminAbierto === undefined ? provs[0] : s.adminAbierto;
+        return provs.map(p => ({
+          nombre: p,
+          contador: lista.filter(a => a.proveedor === p).length + ' art.',
+          flecha: (aq || abiertoAdmin === p) ? '▾' : '▸',
+          abrir: () => this.setState({ adminAbierto: abiertoAdmin === p ? null : p }),
+          items: (aq || abiertoAdmin === p ? lista.filter(a => a.proveedor === p) : []).map(a => ({
+            id: a.id, nombre: a.nombre,
+            detalle: 'mín ' + (a.minimo || '—') + (a.unidad ? ' · ' + a.unidad : ''),
+            editar: () => this.setState({ adminForm: { id: a.id, nombre: a.nombre, proveedor: a.proveedor, minimo: a.minimo || '', unidad: a.unidad || '' }, adminMsg: '' }, () => setTimeout(() => window.scrollTo(0, 0), 30)),
+            accionTexto: a.activo ? 'Dar de baja' : 'Reactivar',
+            accion: () => a.activo ? this.setState({ adminBaja: a }) : this.cambiarActivo(a.id, true)
+          }))
+        }));
+      })(),
+      adminProveedores: [...new Set(s.adminItems.map(a => a.proveedor))].concat(s.cats.filter(c => !s.adminItems.some(a => a.proveedor === c))).map(p => ({ valor: p })),
+      formVisible: !!s.adminForm,
+      formTitulo: s.adminForm && s.adminForm.id ? 'Editar artículo' : 'Nuevo artículo',
+      formNombre: s.adminForm ? s.adminForm.nombre : '',
+      formProveedor: s.adminForm ? s.adminForm.proveedor : '',
+      formMinimo: s.adminForm ? s.adminForm.minimo : '',
+      formUnidad: s.adminForm ? s.adminForm.unidad : '',
+      setFormNombre: e => this.setState({ adminForm: { ...s.adminForm, nombre: e.target.value } }),
+      setFormProveedor: e => this.setState({ adminForm: { ...s.adminForm, proveedor: e.target.value } }),
+      setFormMinimo: e => this.setState({ adminForm: { ...s.adminForm, minimo: e.target.value } }),
+      setFormUnidad: e => this.setState({ adminForm: { ...s.adminForm, unidad: e.target.value } }),
+      nuevoArticulo: () => this.setState({ adminForm: { nombre: '', proveedor: s.cats[0] || '', minimo: '', unidad: '' }, adminMsg: '' }, () => setTimeout(() => window.scrollTo(0, 0), 30)),
+      guardarForm: () => this.guardarArticulo(),
+      cancelarForm: () => this.setState({ adminForm: null }),
+      bajaVisible: !!s.adminBaja,
+      bajaNombre: s.adminBaja ? s.adminBaja.nombre : '',
+      cancelarBaja: () => this.setState({ adminBaja: null }),
+      confirmarBaja: () => this.cambiarActivo(s.adminBaja.id, false),
+      sbUrl: s.sbUrl, sbKey: s.sbKey,
+      setSbUrl: e => this.setState({ sbUrl: e.target.value }),
+      setSbKey: e => this.setState({ sbKey: e.target.value }),
+      guardarConexion: () => {
+        const url = s.sbUrl.trim(), key = s.sbKey.trim();
+        if (!url || !key) return this.setState({ aviso: 'Faltan el Project URL o la llave anon.', avisoTipo: 'error' });
+        try { localStorage.setItem(LS_CONEXION, JSON.stringify({ url, key })); } catch (e) {}
+        this.setState({ aviso: '' });
+        this.conectar(url, key);
+      },
+      usarLocal: () => { this.setState({ pantalla: 'captura' }); this.cargarLocal(); },
+      loginCorreo: s.loginCorreo, loginPass: s.loginPass,
+      setLoginCorreo: e => this.setState({ loginCorreo: e.target.value }),
+      setLoginPass: e => this.setState({ loginPass: e.target.value }),
+      hacerLogin: async () => {
+        if (!this.sb) return;
+        const { data, error } = await this.sb.auth.signInWithPassword({ email: s.loginCorreo.trim(), password: s.loginPass });
+        if (error) return this.setState({ aviso: 'No se pudo entrar: ' + error.message, avisoTipo: 'error' });
+        this.setState({ sesion: data.session, chef: nombreDe(data.session.user && data.session.user.email, this.state.usuarios), chefGenero: generoDe(data.session.user && data.session.user.email, this.state.usuarios), pantalla: 'captura', loginPass: '', aviso: '' });
+        this.cargarNube();
+      },
+      cerrarSesion: async () => {
+        if (this.sb) await this.sb.auth.signOut();
+        clearInterval(this._poll);
+        this.setState({ sesion: null, pantalla: 'login' });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
